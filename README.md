@@ -1,4 +1,4 @@
-# QM7 Dataset Processing and Curation for PyTorch Geometric
+# QM7 Dataset Processing and Curation to PyTorch Geometric Molecular Graphs
 
 [![Python Version](https://img.shields.io/badge/python-%3E=3.8-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -8,88 +8,91 @@
 [![Formatter: black](https://img.shields.io/badge/formatter-black-000000?style=flat&logo=python&logoColor=yellow)](https://github.com/psf/black)
 
 
-This repository contains Python scripts for processing the QM7 quantum chemistry dataset into a graph-based format suitable for machine learning tasks using PyTorch Geometric (PyG). It handles the parsing of SDF, CSV, and MAT files, constructs molecular graphs, and applies data curation steps including feature normalization and custom transformations.
 
-## Table of Contents
+This repository provides a robust Python pipeline for processing the QM7 quantum chemistry dataset into a graph-based format, optimized for PyTorch Geometric (PyG). It handles the parsing of raw SDF, CSV, and MAT files, constructs detailed molecular graphs, and applies essential data curation steps including feature normalization and custom transformations.
+Table of Contents
 
-- [Introduction](#introduction)
-- [Features](#features)
-- [Dataset](#dataset)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Prepare Data Directories](#prepare-data-directories)
-- [Example Workflow](#example-workflow)
-- [Project Structure](#project-structure)
-- [Core Components](#core-components)
-- [Error Handling](#error-handling)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
+    Introduction
+    Features
+    Dataset
+    Installation
+    Usage
+        Prepare Data Directories
+        Example Workflow
+    Project Structure
+    Core Components
+    Error Handling
+    Contributing
+    License
+    Acknowledgments
 
-## Introduction
+Introduction
 
-The QM7 dataset is a benchmark dataset in quantum chemistry, containing 7165 molecules with up to 23 atoms (C, O, N, S, H) and their atomization energies. This project provides a robust pipeline to convert the raw QM7 data (SDF, MAT, and CSV files) into a structured graph format, where molecules are represented as `torch_geometric.data.Data` objects. This enables the application of Graph Neural Networks (GNNs) for tasks such as property prediction.
+The QM7 dataset is a widely used benchmark in quantum chemistry, comprising 7165 molecules with up to 23 atoms (C, O, N, S, H) and their corresponding atomization energies. This project offers a comprehensive pipeline to transform this raw data (from SDF, MAT, and CSV files) into a structured graph format, where each molecule is represented as a torch_geometric.data.Data object. This structured format is ideal for applying Graph Neural Networks (GNNs) to tasks like molecular property prediction.
 
-The processing pipeline includes:
-- Loading molecular structures, atomic charges, Coulomb matrices, and target energies.
-- Comprehensive data alignment and consistency checks between different data sources.
-- Construction of PyTorch Geometric `Data` objects with detailed node and edge features.
-- Support for pre-filtering graphs based on various criteria (e.g., number of atoms, carbon count).
-- Global feature normalization (mean-variance scaling) using `sklearn.preprocessing.StandardScaler`.
-- Application of custom PyG transforms.
-- Saving the processed dataset into manageable chunks and then consolidating it into a single `.pt` file.
+The processing pipeline covers:
 
-## Features
+    Loading molecular structures, atomic charges, Coulomb matrices, and target energies.
+    Thorough data alignment and consistency checks across diverse data sources.
+    Construction of PyTorch Geometric Data objects with rich node and edge features.
+    Support for pre-filtering graphs based on various criteria (e.g., number of atoms, carbon count).
+    Global feature normalization (mean-variance scaling) using sklearn.preprocessing.StandardScaler.
+    Integration of custom PyG transforms.
+    Efficiently saving the processed dataset in manageable chunks before consolidating it into a single .pt file.
 
-- **Robust Data Loading**: Handles SDF, CSV, and `.mat` files with error handling and logging.
-- **Data Consistency Checks**: Aligns RDKit molecules with `.mat` data based on atomic composition to ensure data integrity.
-- **Rich Graph Representation**:
-    - **Node Features (`x`)**: One-hot encoded atom type, atomic number, aromaticity, hybridization (SP, SP2, SP3), total number of hydrogens, atomic charge from QM7 `.mat` file, and diagonal element of the Coulomb matrix.
-- **Atomic Numbers (`z`)**: Pure atomic numbers for each node.
-- **3D Positions (`pos`)**: Atomic coordinates from the SDF conformers.
-- **Edge Features (`edge_attr`)**: One-hot encoded RDKit bond type (Single, Double, Triple, Aromatic) and off-diagonal element of the Coulomb matrix.
-- **Target (`y`)**: Atomization energy.
-- **Original Index (`idx`)**: Retains the original index for traceability.
-- **Modular Pre-filtering**: Allows defining custom filters (e.g., by node count, specific atom counts) to exclude undesirable graphs early in the pipeline.
-- **Global Feature Normalization**: Automatically calculates and applies `StandardScaler` transformations for specified node/edge features across the entire dataset.
-- **Customizable Transforms**: Integrates seamlessly with `torch_geometric.transforms.Compose` for additional user-defined graph transformations.
-- **Chunked Processing**: Processes large datasets in memory-efficient chunks, saving intermediate results to disk.
-- **Comprehensive Error Handling**: Custom exception classes provide detailed information on processing failures.
-- **Detailed Logging**: Provides informative logs for monitoring the processing pipeline.
+Features
 
-## Dataset
+    Robust Data Loading: Seamlessly handles SDF, CSV, and .mat files with integrated error handling and logging.
+    Data Consistency Checks: Aligns RDKit molecules with .mat data based on atomic composition, ensuring high data integrity.
+    Rich Graph Representation: Each Data object includes:
+        Node Features (x): One-hot encoded atom type, atomic number, aromaticity, hybridization (SP, SP2, SP3), total number of hydrogens, atomic charge (from QM7 .mat file), and diagonal element of the Coulomb matrix.
+        Atomic Numbers (z): Pure atomic numbers for each node.
+        3D Positions (pos): Atomic coordinates derived from the SDF conformers.
+        Edge Features (edge_attr): One-hot encoded RDKit bond type (Single, Double, Triple, Aromatic) and the off-diagonal element of the Coulomb matrix.
+        Target (y): Atomization energy.
+        Original Index (idx): Retains the original index for full traceability.
+    Modular Pre-filtering: Allows you to define and apply custom filters (e.g., by node count, specific atom counts) to efficiently exclude unwanted graphs early in the pipeline.
+    Global Feature Normalization: Automatically calculates and applies StandardScaler transformations to specified node and edge features across the entire dataset.
+    Customizable Transforms: Integrates effortlessly with torch_geometric.transforms.Compose for any additional user-defined graph transformations.
+    Chunked Processing: Processes large datasets in a memory-efficient manner by saving intermediate results to disk in chunks.
+    Comprehensive Error Handling: Custom exception classes provide detailed and actionable information for processing failures.
+    Detailed Logging: Offers informative logs to monitor the entire processing pipeline.
 
-The QM7 dataset can typically be obtained from sources like:
-- [GDB-9 related datasets](https://figshare.com/articles/QM7_dataset/1930773) (look for `gdb7.sdf`, `atomization_energies.csv`, `qm7.mat`)
-- [MoleculeNet's QM7 page](https://moleculenet.org/datasets/qm7)
+Dataset
 
-**Required Files:**
-- `gdb7.sdf`: Contains molecular structures (RDKit `Chem.Mol` objects).
-- `atomization_energies.csv`: Contains atomization energies.
-- `qm7.mat`: Contains Coulomb matrices (`X`) and atomic charges (`Z`).
+The QM7 dataset can typically be obtained from the following sources:
 
-Place these files in a designated `raw_data` directory (e.g., `data/qm7/raw_data`).
+    GDB-9 related datasets: You'll need gdb7.sdf, atomization_energies.csv, and qm7.mat. You can often find these at https://figshare.com/articles/QM7_dataset/1930773.
+    MoleculeNet's QM7 page: https://moleculenet.org/datasets/qm7
 
-## Installation
+Required Files:
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/shahram-boshra/qm7_database_process.git](git@github.com:shahram-boshra/qm7_database_process.git)
-    cd your-repo-name
-    ```
+    gdb7.sdf: Contains molecular structures (RDKit Chem.Mol objects).
+    atomization_energies.csv: Contains atomization energies.
+    qm7.mat: Contains Coulomb matrices (X) and atomic charges (Z).
 
-2.  **Create a virtual environment (recommended):**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate # On Windows: `venv\Scripts\activate`
-    ```
+Placement: Please place these required files in a designated raw_data directory within your project, for example, data/qm7/raw_data.
+Installation
 
-3.  **Install dependencies:**
-    ```bash
+    Clone the repository:
+    Bash
+
+git clone https://github.com/shahram-boshra/qm7_database_process.git
+cd qm7_database_process # Make sure to change into the cloned directory
+
+Create a virtual environment (recommended):
+Bash
+
+python -m venv venv
+source venv/bin/activate # On Windows: `venv\Scripts\activate`
+
+Install dependencies:
+Bash
+
     pip install -r requirements.txt
-    ```
-    The `requirements.txt` should contain:
-    ```
+
+    The requirements.txt file should contain the following:
+
     torch
     torch_geometric
     rdkit-pypi
@@ -99,34 +102,31 @@ Place these files in a designated `raw_data` directory (e.g., `data/qm7/raw_data
     tqdm
     scikit-learn
     PyYAML
-    ```
 
-## Usage
+Usage
+Prepare Data Directories
 
-### Prepare Data Directories
-
-First, ensure you have the raw QM7 dataset files in a structured manner. For example:
+First, ensure your raw QM7 dataset files are organized as follows:
 
 .
 ├── data/
 │   └── qm7/
-│       └── raw_data/
+│       └── raw_data/                 # Directory for your original QM7 dataset files
 │           ├── gdb7.sdf
 │           ├── atomization_energies.csv
 │           └── qm7.mat
-│       └── processed/ # Output directory for curated data
+│       └── processed/                # Output directory for the final curated data
 └── scripts/
-├── pyg_qm7_processing.py
-├── qm7_curation.py
-└── exceptions.py
-└── main_process.py # Example script to run the pipeline
+    ├── pyg_qm7_processing.py
+    ├── qm7_curation.py
+    ├── exceptions.py
+    └── main_process.py               # Example script to run the pipeline
 
+Example Workflow
 
-### Example Workflow
+Below is an example of how you can integrate and use the processing pipeline. You would typically create a main_process.py (or similar) script to orchestrate these steps.
+Python
 
-Below is an example of how you might integrate and use the processing pipeline. You would typically create a `main_process.py` (or similar) script to orchestrate the steps.
-
-```python
 # main_process.py
 import logging
 from pathlib import Path
@@ -135,9 +135,9 @@ from functools import partial
 from torch_geometric.transforms import Compose
 
 # Assuming these are in your project's scripts directory or properly installed
-from pyg_qm7_processing import process_qm7_data, filter_by_max_nodes, filter_by_min_nodes, filter_by_num_carbons, CustomEdgeFeatureCombiner
-from qm7_curation import curate_qm7_data, CustomEdgeFeatureCombiner # CustomEdgeFeatureCombiner in curation might be a typo if it's identical
-from exceptions import PipelineError, GraphCurationError, QM7SpecificProcessingError # Import specific exceptions
+from pyg_qm7_processing import process_qm7_data, filter_by_max_nodes, filter_by_min_nodes, filter_by_num_carbons
+from qm7_curation import curate_qm7_data, CustomEdgeFeatureCombiner
+from exceptions import PipelineError, GraphCurationError, QM7SpecificProcessingError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -197,7 +197,6 @@ def run_qm7_pipeline():
     additional_transforms = Compose([
         CustomEdgeFeatureCombiner(param1='value1', param2='value2'),
         # Add more transforms here if needed, e.g.,
-        # MyCustomNodeFeatureModifier(),
         # T.ToSparseTensor(),
     ])
 
@@ -232,19 +231,19 @@ To run this example:
 
     This will process the data, save intermediate chunks, curate them (including normalization), save the final dataset, and clean up the intermediate chunks.
 
-Project Structure
+##Project Structure
 
 .
 ├── data/
 │   └── qm7/
-│       ├── raw_data/                 # Original QM7 dataset files (gdb7.sdf, atomization_energies.csv, qm7.mat)
-│       ├── intermediate_chunks/      # Temporary directory for chunked PyG Data objects
-│       └── processed/                # Output directory for the final curated dataset
+│       ├── raw_data/               # Original QM7 dataset files (gdb7.sdf, atomization_energies.csv, qm7.mat)
+│       ├── intermediate_chunks/    # Temporary directory for chunked PyG Data objects
+│       └── processed/              # Output directory for the final curated dataset
 ├── scripts/
-│   ├── pyg_qm7_processing.py         # Core script for initial data loading, graph construction, and chunking
-│   ├── qm7_curation.py               # Script for global statistics calculation, normalization, and final transforms
-│   ├── exceptions.py                 # Custom exception definitions for robust error handling
-│   └── main_process.py               # Example script to run the end-to-end processing pipeline
+│   ├── pyg_qm7_processing.py       # Core script for initial data loading, graph construction, and chunking
+│   ├── qm7_curation.py             # Script for global statistics calculation, normalization, and final transforms
+│   ├── exceptions.py               # Custom exception definitions for robust error handling
+│   └── main_process.py             # Example script to run the end-to-end processing pipeline
 ├── .gitignore
 ├── requirements.txt
 └── README.md
@@ -252,39 +251,38 @@ Project Structure
 Core Components
 pyg_qm7_processing.py
 
-This module handles the initial phase of data processing.
+This module manages the initial phase of data processing, including:
 
     load_sdf_molecules: Loads RDKit molecule objects from an SDF file.
     load_atomization_energies_pandas: Loads target energies from a CSV file.
     load_qm7_mat_data: Loads Coulomb matrices and atomic charges from a .mat file.
-    identify_sdf_indices_to_exclude: Performs critical consistency checks between SDF and MAT data based on atomic composition to identify and exclude inconsistent entries.
+    identify_sdf_indices_to_exclude: Performs crucial consistency checks between SDF and MAT data (based on atomic composition) to identify and exclude inconsistent entries.
     create_pyg_graph: Constructs a torch_geometric.data.Data object for a single molecule, integrating all features.
     filter_by_max_nodes, filter_by_min_nodes, filter_by_num_carbons: Example pre-filter functions to exclude graphs based on criteria like number of nodes or specific atom counts.
     process_qm7_data: The main orchestration function for this module, responsible for loading all raw data, applying consistency checks and pre-filters, and saving the processed graphs into memory-efficient chunks.
 
 qm7_curation.py
 
-This module handles the post-processing and curation of the chunked data.
+This module handles the post-processing and curation of the chunked data:
 
-    calculate_global_stats_with_scaler: Performs the first pass over the chunked data to calculate global mean and standard deviation for specified features using sklearn.preprocessing.StandardScaler.partial_fit.
+    calculate_global_stats_with_scaler: Conducts the first pass over the chunked data to compute global mean and standard deviation for specified features using sklearn.preprocessing.StandardScaler.partial_fit.
     StandardScalerTransform: A custom torch_geometric.transforms.BaseTransform that applies a pre-fitted StandardScaler to a specified feature of a PyG Data object.
-    CustomEdgeFeatureCombiner: A placeholder custom PyG transform that demonstrates how to include user-defined transformations in the pipeline. You can modify this to implement specific feature engineering for edge attributes.
-    curate_qm7_data: The main orchestration function for this module, which performs a second pass over the data, applies the fitted StandardScalerTransform for normalization, applies any additional pre_transforms (e.g., CustomEdgeFeatureCombiner), concatenates all processed graphs, and saves the final dataset to a single .pt file. It also cleans up the intermediate chunk directory.
+    CustomEdgeFeatureCombiner: A placeholder custom PyG transform demonstrating how to incorporate user-defined transformations into the pipeline. You can modify this to implement specific feature engineering for edge attributes.
+    curate_qm7_data: The main orchestration function for this module, which performs a second pass over the data. It applies the fitted StandardScalerTransform for normalization, applies any additional pre_transforms (e.g., CustomEdgeFeatureCombiner), concatenates all processed graphs, and saves the final dataset to a single .pt file. It also cleans up the intermediate chunk directory.
 
 exceptions.py
 
-This module defines custom exception classes to provide more specific and informative error messages throughout the data processing pipeline, making debugging easier.
+This module defines custom exception classes, providing more specific and informative error messages throughout the data processing pipeline. This significantly aids in debugging and quickly identifying and resolving issues.
 Error Handling
 
-The codebase is designed with robust error handling using custom exception classes defined in exceptions.py. Each critical step (file loading, data alignment, graph construction, feature extraction, normalization, saving) is wrapped in try-except blocks to catch specific issues and provide clear, actionable error messages. This helps in quickly identifying and resolving problems during the data processing.
-Contributing
+The codebase is designed with robust error handling using custom exception classes defined in exceptions.py. Each critical step (file loading, data alignment, graph construction, feature extraction, normalization, saving) is wrapped in try-except blocks. This ensures that specific issues are caught, and clear, actionable error messages are provided, which greatly assists in rapidly identifying and resolving problems during data processing.
+##Contributing
 
-Contributions are welcome! If you find a bug or have suggestions for improvements, please open an issue or submit a pull request.
-License
+Contributions are welcome! If you encounter a bug or have suggestions for improvements, please feel free to open an issue or submit a pull request.
+##License
 
 This project is open-source and available under the MIT License.
-
-Acknowledgments
+##Acknowledgments
 
 We gratefully acknowledge the contributions of the following:
 
@@ -292,6 +290,5 @@ We gratefully acknowledge the contributions of the following:
     The developers of RDKit, an open-source cheminformatics software, for providing robust tools essential for molecular manipulation and feature extraction in this project.
     The PyTorch Geometric team for their flexible and powerful library, which significantly simplified the implementation of graph neural network functionalities.
     The PyTorch development team for their comprehensive deep learning framework, foundational to our tensor operations and overall computational graph.
-    The creators of NumPy and Pandas for their indispensable libraries, which were crucial for efficient numerical computation and data handling.
+    The creators of NumPy and Pandas for their indispensable libraries, crucial for efficient numerical computation and data handling.
     The scikit-learn community for their high-quality machine learning tools, particularly the StandardScaler used for feature normalization.
-<!-- end list -->
