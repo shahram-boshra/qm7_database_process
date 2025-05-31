@@ -1,0 +1,37 @@
+# config.yaml   
+DATA_PATHS:
+  BASE_DATA_DIR: "/home/shahram/Chem_Data"
+
+# Download URLs configuration
+DOWNLOAD_URLS:
+  GDB7_SDF_URL: "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/gdb7.tar.gz"
+  QM7_MAT_URL: "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/qm7.mat"
+
+# Processing parameters for pyg_qm7_processing.py
+PROCESSING:
+  CHUNK_SIZE: 500
+  # Pre-filtering configuration
+  PRE_FILTERS:
+    enable_max_nodes_filter: true
+    max_nodes: 10 # Example: filter out graphs with > 10 nodes
+    enable_min_nodes_filter: false
+    min_nodes: 2 # Example: filter out graphs with < 2 nodes
+    enable_num_carbons_filter: false
+    min_carbons: 1 # Example: filter out graphs with < 1 carbon atom
+
+# Curation parameters for qm7_curation.py
+CURATION:
+  FEATURE_KEYS_FOR_NORMALIZATION: ["x", "edge_attr"] # Renamed from FEATURE_KEYS_FOR_NORM for consistency
+  # Additional PyTorch Geometric transforms to apply during curation
+  ADDITIONAL_PYG_TRANSFORMS:
+     - name: "ToUndirected"
+     - name: "AddSelfLoops"
+       kwargs: {fill_value: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]} # 6 zeros for 6 features
+     - name: "Cartesian" # ADD THIS LINE
+       kwargs: {cat: False} # No specific kwargs are usually needed for default behavior
+     - name: "CustomEdgeFeatureCombiner" # Your custom transform to combine them
+       kwargs: {}
+
+# Output files configuration
+OUTPUT_FILES:
+  CURATED_DATASET_NAME: "qm7_graph_data_curated.pt"
